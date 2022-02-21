@@ -1,5 +1,5 @@
 import os
-from pigencoder import PigEncoder
+from smbpi.pigencoder import PigEncoder
 from alnum.segments import Seg14x4
 
 PIN_ENC_A = 20
