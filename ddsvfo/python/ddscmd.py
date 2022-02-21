@@ -15,12 +15,12 @@ def parse_args():
 
     _help = 'Disable interpolation (default: %s)' % defs['nointerp']
     parser.add_argument(
-        '-i', '--nointerp', dest='nointerp', action='store_true',
+        '-n', '--nointerp', dest='nointerp', action='store_true',
         default=defs['nointerp'],
         help=_help)
 
     _help = "Intermediate frequency (default: %s)" % defs['intfreq']
-    parser.add_argument("-f", "--freq", dest='intfreq', type=int,
+    parser.add_argument("-i", "--int", dest='intfreq', type=int,
         default=defs["intfreq"],
         help=_help)
 
