@@ -1,10 +1,10 @@
 import RPi.GPIO as GPIO
 import time
 
-PIN_CLK = 15
-PIN_LOAD = 16
-PIN_DATA = 18
-PIN_RESET = 22
+PIN_CLK = 22
+PIN_LOAD = 23
+PIN_DATA = 24
+PIN_RESET = 25
 
 
 class DDSVFO:
@@ -41,7 +41,6 @@ class DDSVFO:
             self.tick(self.pinClk)
 
     def setFrequency(self, freq):
-        print("setfreq", freq)
         freq = int(freq*4294967296/125000000)
         for i in range(0, 4):
             self.sendByte(freq & 0xFF)

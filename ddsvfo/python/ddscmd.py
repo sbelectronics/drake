@@ -1,6 +1,8 @@
 from smbus2 import SMBus
+import pigpio
 import RPi.GPIO as GPIO
 import argparse
+import time
 from ddsvfo import DDSVFO
 from ddscontrol import DDSControl
 
@@ -40,7 +42,9 @@ def setFrequency(control, args):
 def main():
     args = parse_args()
 
-    GPIO.setmode(GPIO.BOARD)
+    pi = pigpio.pi()
+
+    GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
 
     bus = SMBus(1)
@@ -48,10 +52,18 @@ def main():
     control = DDSControl(vfo, 
                          bus,
                          enableInterp=(not args.nointerp),
-                         intfreq=args.intfreq)
+                         intfreq=args.intfreq,
+                         pi=pi)
 
     if args.cmd == "setfreq":
         setFrequency(control, args)
+
+    if args.cmd == "run":
+        control.start()
+        while True:
+            control.loop()
+            time.sleep(0.0001)
+
 
 
 if __name__ == "__main__":

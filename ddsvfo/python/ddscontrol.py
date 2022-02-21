@@ -1,8 +1,12 @@
 import os
+from pigencoder import PigEncoder
 from alnum.segments import Seg14x4
 
+PIN_ENC_A = 20
+PIN_ENC_B = 21
+
 class DDSControl:
-    def __init__(self, vfo, i2c, enableInterp=True, intfreq=0):
+    def __init__(self, vfo, i2c, enableInterp=True, intfreq=0, step=10, pi=None):
         self.vfo = vfo
         self.i2c = i2c
         self.displayLeft = Seg14x4(i2c, 0x70)
@@ -11,9 +15,23 @@ class DDSControl:
         self.displayRight.brightness = 0.25
         self.enableInterp = enableInterp
         self.intfreq = intfreq
+        self.step = step
+        self.frequency = 7074000
         self.interp = []
+        self.pi = pi
         if self.enableInterp:
             self.loadCorrections()
+
+    def start(self):
+        self.encoder = PigEncoder(self.pi, PIN_ENC_A, PIN_ENC_B)
+
+    def encoderCallback(self, delta):
+        self.setFrequency(self.frequency + self.step * delta)  
+
+    def encoderUpdated(self, handler):
+        print("XXX update")
+        delta = handler.thread.get_delta(handler.num)
+        self.setFrequency(self.frequency + self.step * delta)
 
     def loadCorrections(self, fn="correct.txt"):
         if os.path.exists(fn):
@@ -25,7 +43,6 @@ class DDSControl:
                     continue
                 v0 = int(parts[0])
                 v1 = int(parts[1])
-                print("%0.8f" % (float(v0)/float(v1)))
                 self.interp.append((v1,v0))
 
     def interpolate(self, v):
@@ -48,6 +65,12 @@ class DDSControl:
         freqStr = "%8d" % freq
         self.displayLeft.print(freqStr[:2] + "." + freqStr[2:4])
         self.displayRight.print(freqStr[4:5] + "." + freqStr[5:])
+
+    def loop(self):
+        encoderDelta = self.encoder.getAndResetDelta()
+        if (encoderDelta != 0):
+            self.setFrequency(self.frequency + self.step * encoderDelta)
+        pass
 
 
 def main():
