@@ -5,6 +5,19 @@ from alnum.segments import Seg14x4
 PIN_ENC_A = 20
 PIN_ENC_B = 21
 
+KEY_BAND_UP = 1
+KEY_BAND_DOWN = 2
+KEY_MEM0 = 4
+KEY_MEM1 = 8
+
+BANDS = [
+    {"name": "80 M", "start": 3500000, "span": 500000},
+    {"name": "40 M", "start": 7000000, "span": 300000, "mem0": 7074000, "mem1": 7284000},
+    {"name": "20 M", "start": 14000000, "span": 350000, "mem0": 14074000},
+    {"name": "15 M", "start": 21000000, "span": 450000},
+    {"name": "10 M", "start": 28000000, "span": 1700000}
+]
+
 class DDSControl:
     def __init__(self, vfo, i2c, enableInterp=True, intfreq=0, step=10, pi=None):
         self.vfo = vfo
@@ -19,17 +32,15 @@ class DDSControl:
         self.frequency = 7074000
         self.interp = []
         self.pi = pi
+        self.curBand = None
+        self.selectBandByName("40 M")
         if self.enableInterp:
             self.loadCorrections()
 
     def start(self):
         self.encoder = PigEncoder(self.pi, PIN_ENC_A, PIN_ENC_B)
 
-    def encoderCallback(self, delta):
-        self.setFrequency(self.frequency + self.step * delta)  
-
     def encoderUpdated(self, handler):
-        print("XXX update")
         delta = handler.thread.get_delta(handler.num)
         self.setFrequency(self.frequency + self.step * delta)
 
@@ -66,10 +77,53 @@ class DDSControl:
         self.displayLeft.print(freqStr[:2] + "." + freqStr[2:4])
         self.displayRight.print(freqStr[4:5] + "." + freqStr[5:])
 
+    def selectBand(self, band):
+        if band.get("mem0")!=None:
+            self.setFrequency(band["mem0"])
+        else:
+            self.setFrequency(band["start"])
+        self.curBand = band
+
+    def selectBandByName(self, name):
+        for band in BANDS:
+            if band["name"] == name:
+                self.selectBand(band)
+
+    def nextBand(self):
+        prev = None
+        for band in BANDS:
+            if prev == self.curBand:
+                self.selectBand(band)
+                return
+            prev = band
+
+    def prevBand(self):
+        prev = None
+        for band in BANDS:
+            if (band == self.curBand) and (prev is not None):
+                self.selectBand(prev)
+                return
+            prev = band
+
+    def onKeyDown(self, k):
+        pass
+
+    def onKeyUp(self, k):
+        if k == KEY_BAND_UP:
+            self.prevBand()
+        elif k == KEY_BAND_DOWN:
+            self.nextBand()
+        elif k == KEY_MEM0:
+            if self.curBand.get("mem0"):
+                self.setFrequency(self.curBand["mem0"])
+        elif k == KEY_MEM1:
+            if self.curBand.get("mem1"):
+                self.setFrequency(self.curBand["mem1"])
+
     def loop(self):
         encoderDelta = self.encoder.getAndResetDelta()
         if (encoderDelta != 0):
-            self.setFrequency(self.frequency + self.step * encoderDelta)
+            self.setFrequency(self.frequency + self.step * (-encoderDelta))
         pass
 
 
