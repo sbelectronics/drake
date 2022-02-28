@@ -1,6 +1,8 @@
 import os
 from smbpi.pigencoder import PigEncoder
 from alnum.segments import Seg14x4
+from threading import Thread
+import time
 
 PIN_ENC_A = 20
 PIN_ENC_B = 21
@@ -18,8 +20,10 @@ BANDS = [
     {"name": "10 M", "start": 28000000, "span": 1700000}
 ]
 
-class DDSControl:
+class DDSControl(Thread):
     def __init__(self, vfo, i2c, enableInterp=True, intfreq=0, step=10, pi=None):
+        Thread.__init__(self)
+        self.daemon = True
         self.vfo = vfo
         self.i2c = i2c
         self.displayLeft = Seg14x4(i2c, 0x70)
@@ -34,11 +38,15 @@ class DDSControl:
         self.pi = pi
         self.curBand = None
         self.selectBandByName("40 M")
+
+        self.asyncFrequencyRequest = None
+
         if self.enableInterp:
             self.loadCorrections()
 
     def start(self):
         self.encoder = PigEncoder(self.pi, PIN_ENC_A, PIN_ENC_B)
+        Thread.start(self)
 
     def encoderUpdated(self, handler):
         delta = handler.thread.get_delta(handler.num)
@@ -76,6 +84,9 @@ class DDSControl:
         freqStr = "%8d" % freq
         self.displayLeft.print(freqStr[:2] + "." + freqStr[2:4])
         self.displayRight.print(freqStr[4:5] + "." + freqStr[5:])
+
+    def getBandList(self):
+        return BANDS
 
     def selectBand(self, band):
         if band.get("mem0")!=None:
@@ -120,11 +131,20 @@ class DDSControl:
             if self.curBand.get("mem1"):
                 self.setFrequency(self.curBand["mem1"])
 
-    def loop(self):
-        encoderDelta = self.encoder.getAndResetDelta()
-        if (encoderDelta != 0):
-            self.setFrequency(self.frequency + self.step * (-encoderDelta))
-        pass
+    def setFrequencyAsync(self, freq):
+        self.asyncFrequencyRequest = freq
+
+    def run(self):
+        while True:
+            if self.asyncFrequencyRequest is not None:
+                print("FR!")
+                self.setFrequency(self.asyncFrequencyRequest)
+                self.asyncFrequencyRequest = None
+
+            encoderDelta = self.encoder.getAndResetDelta()
+            if (encoderDelta != 0):
+                self.setFrequency(self.frequency + self.step * (-encoderDelta))
+            time.sleep(0.001)
 
 
 def main():

@@ -6,6 +6,7 @@ import time
 from ddsvfo import DDSVFO
 from ddscontrol import DDSControl
 from keypad import DDSKeypad
+from webserver import webRun
 
 
 def parse_args():
@@ -69,12 +70,10 @@ def main():
 
     if args.cmd == "run":
         control.setFrequency(args.freq)
-        control.start()
         keypad.start()
+        control.start()
         print("started")
-        while True:
-            control.loop()
-            time.sleep(0.0001)
+        webRun(control)
 
 if __name__ == "__main__":
     main()
