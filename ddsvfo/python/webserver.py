@@ -3,6 +3,7 @@
 from bottle import route, run, static_file, request, subprocess
 
 controller = None
+lastFrequency = None
 
 @route("/")
 def index():
@@ -20,6 +21,7 @@ def ddsweb_css():
 def status():
     return {"curBand": controller.curBand,
             "frequency": controller.frequency,
+            "localChange": controller.localChange,
             "bands": controller.getBandList()}
 
 @route("/setfreq")
@@ -37,7 +39,6 @@ def webRun(ctrl):
     global controller
     controller = ctrl
     run(host='0.0.0.0', port=8080, debug=True)
-
 
 if __name__ == "__main__":
     run(host='0.0.0.0', port=8080, debug=True)

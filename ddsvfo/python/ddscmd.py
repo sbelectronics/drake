@@ -27,12 +27,7 @@ def parse_args():
     _help = "Intermediate frequency (default: %s)" % defs['intfreq']
     parser.add_argument("-i", "--int", dest='intfreq', type=int,
         default=defs["intfreq"],
-        help=_help)
-
-    _help = "Initial frequency (default: %s)" % defs['freq']
-    parser.add_argument("-f", "--freq", dest='freq', type=int,
-        default=defs["freq"],
-        help=_help)        
+        help=_help)    
 
     parser.add_argument('cmd', help='command')
     parser.add_argument('args', help='arguments', nargs='*')
@@ -69,7 +64,6 @@ def main():
         setFrequency(control, args)
 
     if args.cmd == "run":
-        control.setFrequency(args.freq)
         keypad.start()
         control.start()
         print("started")
